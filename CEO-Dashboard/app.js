@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CEO 决策效能驾驶舱 | Mind Engineering Lab</title>
+    
+    <!-- ==========================================
+         核心引擎区 (Powered by Alibaba/Eleme CDN)
+         ========================================== -->
+    
+    <!-- 1. 样式引擎 (Tailwind) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. React 核心 (阿里源) -->
+    <script crossorigin src="https://npm.elemecdn.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://npm.elemecdn.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- 3. Babel 编译器 (阿里源) -->
+    <script crossorigin src="https://npm.elemecdn.com/@babel/standalone@7.21.4/babel.min.js"></script>
+
+    <style>
+        body { background-color: #020617; color: #94a3b8; font-family: sans-serif; }
+    </style>
+</head>
+<body>
+    <!-- 挂载点 -->
+    <div id="root">
+        <!-- 如果 React 没加载出来，用户会看到这行字 -->
+        <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #64748b;">
+            <p>正在连接系统...</p>
+            <p style="font-size: 12px; margin-top: 10px;">(如果长时间停留在此页面，请检查网络或刷新)</p>
+        </div>
+    </div>
+
+    <!-- 业务逻辑 -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 极简图标组件 (SVG) ---
+        const IconBase = ({ children, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+        const Activity = (props) => <IconBase {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></IconBase>;
+        const Server = (props) => <IconBase {...props}><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></IconBase>;
+        const Cpu = (props) => <IconBase {...props}><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></IconBase>;
+        const ShieldAlert = (props) => <IconBase {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="M12 8v4"/><path d="M12 16h.01"/></IconBase>;
+        const Zap = (props) => <IconBase {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconBase>;
+        const Database = (props) => <IconBase {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></IconBase>;
+        const Trash2 = (props) => <IconBase {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></IconBase>;
+        const Battery = (props) => <IconBase {...props}><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/></IconBase>;
+        const Wifi = (props) => <IconBase {...props}><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></IconBase>;
+        const ArrowRight = (props) => <IconBase {...props}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></IconBase>;
+        const Terminal = (props) => <IconBase {...props}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></IconBase>;
+        const Phone = (props) => <IconBase {...props}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconBase>;
+        const X = (props) => <IconBase {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>;
+        const Info = (props) => <IconBase {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></IconBase>;
+
+        // --- 核心组件 ---
+        const Slider = ({ value, onChange, label, icon: Icon, description, leftLabel, rightLabel }) => (
+            <div className="mb-10 relative">
+                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                    <Icon className="w-5 h-5 text-cyan-400 shrink-0" />
+                    <span className="font-medium text-slate-100 text-sm md:text-base">{label}</span>
+                </div>
+                <span className="text-cyan-400 font-mono font-bold text-xl">{value}</span>
+                </div>
+                <div className="text-xs text-slate-400 mb-4 leading-relaxed h-8 md:h-auto">{description}</div>
+                
+                <div className="relative h-12 flex items-center">
+                    <input type="range" min="0" max="10" value={value} onChange={(e) => onChange(parseInt(e.target.value))} className="w-full h-3 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 hover:accent-cyan-400 transition-all z-10 relative" />
+                    <div className="absolute top-1/2 left-0 right-0 h-3 bg-slate-800 rounded-lg -translate-y-1/2"></div>
+                </div>
+
+                <div className="flex justify-between mt-1 text-[11px] font-bold font-mono tracking-tight">
+                <span className="text-slate-400">0: {leftLabel}</span>
+                <span className="text-slate-400">10: {rightLabel}</span>
+                </div>
+            </div>
+        );
+
+        function CEODashboard() {
+            const [sScores, setSScores] = useState({ strategic: 5, instruction: 5, latency: 5, compatibility: 5, stability: 5 });
+            const [nScores, setNScores] = useState({ memory: 5, garbage: 5, firewall: 5, voltage: 5, overheat: 5 });
+            const [snr, setSnr] = useState(0);
+            const [status, setStatus] = useState({ label: '', color: '', desc: '' });
+            const [showContact, setShowContact] = useState(false);
+            const [showExplanation, setShowExplanation] = useState(false);
+
+            useEffect(() => {
+                const totalS = Object.values(sScores).reduce((a, b) => a + b, 0);
+                const totalN = Object.values(nScores).reduce((a, b) => a + b, 0);
+                const calculatedSnr = Math.round((totalS / (totalN || 1)) * 100);
+                setSnr(calculatedSnr);
+
+                if (calculatedSnr < 80) {
+                    setStatus({ label: '🔴 警告：系统濒临死机 (SYSTEM CRITICAL)', color: 'text-red-500', borderColor: 'border-red-500', bg: 'bg-red-950/30', desc: 'CPU严重过热，内存溢出。决策中枢处于极高风险状态，建议立即执行“强制关机”并进行系统重构。' });
+                } else if (calculatedSnr <= 150) {
+                    setStatus({ label: '🟡 警示：高负载卡顿 (HIGH LATENCY)', color: 'text-yellow-400', borderColor: 'border-yellow-500', bg: 'bg-yellow-950/30', desc: '后台运行过多“纠结进程”，系统响应迟缓。虽然能勉强运行，但正处于硬件耗损期。需清理缓存。' });
+                } else {
+                    setStatus({ label: '🟢 状态：性能怪兽 (OPTIMAL)', color: 'text-green-400', borderColor: 'border-green-500', bg: 'bg-green-950/30', desc: '军工级服务器状态。主频锁定，散热良好，可承载高强度商业计算任务。' });
+                }
+            }, [sScores, nScores]);
+
+            const updateS = (key, val) => setSScores(prev => ({ ...prev, [key]: val }));
+            const updateN = (key, val) => setNScores(prev => ({ ...prev, [key]: val }));
+
+            return (
+                <div className="min-h-screen bg-slate-950 text-slate-300 font-sans p-4 pb-12 relative overflow-y-auto">
+                <div className="max-w-md mx-auto space-y-6">
+                    <header className="border-b border-slate-800 pb-4 text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
+                        <Activity className="w-6 h-6 text-cyan-500" />
+                        <h1 className="text-xl font-bold text-white tracking-wider">CEO 决策效能 <span className="text-cyan-500">驾驶舱</span></h1>
+                    </div>
+                    <p className="text-slate-500 font-mono text-xs">SYSTEM VERSION 5.0 // MIND ENGINEERING LAB</p>
+                    </header>
+
+                    <section onClick={() => setShowExplanation(true)} className={`rounded-xl border-2 p-5 transition-all duration-500 ${status.borderColor} ${status.bg} relative overflow-hidden shadow-lg shadow-black/30 cursor-pointer group`}>
+                    <div className="absolute top-2 right-2 text-cyan-500/50 group-hover:text-cyan-400 transition-colors"><Info className="w-5 h-5" /></div>
+                    <div className="relative z-10 flex flex-col items-center text-center gap-4">
+                        <div>
+                        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1 flex items-center justify-center gap-1">当前效能 (SNR) <span className="text-[10px] text-cyan-500/70 border border-cyan-500/30 px-1 rounded hover:bg-cyan-500/10 transition-colors">?</span></h2>
+                        <div className={`text-7xl font-black font-mono tracking-tighter ${status.color}`}>{snr}%</div>
+                        </div>
+                        <div className="w-full border-t border-slate-700/50 pt-4"><h3 className={`font-bold text-base mb-2 ${status.color}`}>{status.label}</h3><p className="text-slate-300 text-xs leading-relaxed px-2">{status.desc}</p></div>
+                    </div>
+                    </section>
+
+                    <section className="bg-slate-900/40 rounded-xl p-4 border border-slate-800">
+                        <div className="flex items-center gap-2 mb-4 text-green-400 pb-2 border-b border-slate-800/50"><Server className="w-5 h-5" /><h2 className="text-lg font-bold">核心算力 (SIGNAL)</h2></div>
+                        <div className="space-y-1">
+                        <Slider label="主线信号锁定" icon={Wifi} description="战略目标是否像雷达一样持续锁定？" value={sScores.strategic} onChange={(v) => updateS('strategic', v)} leftLabel="信号丢失" rightLabel="完全锁定" />
+                        <Slider label="指令无损传输" icon={Zap} description="团队执行是否无损、不走样？" value={sScores.instruction} onChange={(v) => updateS('instruction', v)} leftLabel="严重走样" rightLabel="精准执行" />
+                        <Slider label="系统响应速度" icon={Cpu} description="突发决策是秒回还是卡顿？" value={sScores.latency} onChange={(v) => updateS('latency', v)} leftLabel="卡顿死机" rightLabel="极速响应" />
+                        <Slider label="合伙人默契度" icon={Database} description="与核心班子是否默契？(0=内耗严重, 10=无需多言)" value={sScores.compatibility} onChange={(v) => updateS('compatibility', v)} leftLabel="内耗严重" rightLabel="无需多言" />
+                        <Slider label="算法稳定性" icon={Activity} description="决策依靠逻辑数据而非情绪？" value={sScores.stability} onChange={(v) => updateS('stability', v)} leftLabel="情绪乱码" rightLabel="逻辑闭环" />
+                        </div>
+                    </section>
+
+                    <section className="bg-slate-900/40 rounded-xl p-4 border border-slate-800">
+                        <div className="flex items-center gap-2 mb-4 text-red-400 pb-2 border-b border-slate-800/50"><ShieldAlert className="w-5 h-5" /><h2 className="text-lg font-bold">后台内耗 (NOISE)</h2></div>
+                        <div className="space-y-1">
+                        <Slider label="内存占用率" icon={Database} description="资金等压力是否占满了关注力内存？" value={nScores.memory} onChange={(v) => updateN('memory', v)} leftLabel="内存清空" rightLabel="内存爆满" />
+                        <Slider label="垃圾文件堆积" icon={Trash2} description="是否处理大量无效社交/面子工程？" value={nScores.garbage} onChange={(v) => updateN('garbage', v)} leftLabel="定期清理" rightLabel="垃圾溢出" />
+                        <Slider label="防火墙防御力" icon={ShieldAlert} description="听闻行业负面是否容易破防？(10=极易破防)" value={nScores.firewall} onChange={(v) => updateN('firewall', v)} leftLabel="防御坚固" rightLabel="被病毒入侵" />
+                        <Slider label="电压稳定性" icon={Zap} description="情绪忽高忽低？(10=频繁跳闸)" value={nScores.voltage} onChange={(v) => updateN('voltage', v)} leftLabel="电压平稳" rightLabel="频繁跳闸" />
+                        <Slider label="硬件过热警报" icon={Battery} description="身体是否失眠、心累、超负荷？(0=状态满格, 10=感觉快冒烟了)" value={nScores.overheat} onChange={(v) => updateN('overheat', v)} leftLabel="状态满格" rightLabel="快冒烟了" />
+                        </div>
+                    </section>
+
+                    <footer className="mt-8 pt-8 border-t border-slate-800 text-center space-y-6">
+                    <p className="text-slate-300 text-lg md:text-xl font-bold px-4 leading-relaxed">您的系统效能低于 100%？<br/><span className="text-cyan-400 border-b-2 border-cyan-500 pb-1 inline-block mt-2">说明您的“核心算力”正在被隐形内耗吞噬。</span></p>
+                    <div onClick={() => setShowContact(true)} className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-950 to-slate-900 active:scale-95 text-white px-8 py-5 rounded-xl border border-cyan-500/50 shadow-[0_0_20px_-5px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_-5px_rgba(6,182,212,0.5)] transition-all cursor-pointer w-full max-w-xs mx-auto group">
+                        <div className="flex items-center gap-3"><Activity className="w-5 h-5 text-cyan-400 animate-pulse" /><span className="font-bold text-lg tracking-wide text-white group-hover:text-cyan-50">启动系统优化</span></div>
+                        <ArrowRight className="w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <div className="flex justify-center w-full">
+                        <div className="px-4 py-3 bg-slate-900/80 rounded-lg border border-slate-700/50 flex items-center gap-3 text-xs font-mono text-slate-400 shadow-lg shadow-black/20 max-w-full overflow-hidden">
+                        <Terminal className="w-3 h-3 text-cyan-500 shrink-0" /><div className="flex items-center gap-2 truncate"><span className="text-slate-500 hidden sm:inline">ROOT@MIND-LAB:~$</span><Phone className="w-3 h-3 text-slate-400 shrink-0" /><span className="text-cyan-400 font-bold tracking-wide">联系张博士 18980841817</span></div>
+                        </div>
+                    </div>
+                    <p className="text-[9px] text-slate-700 font-mono tracking-widest uppercase opacity-60 pb-4">Designed by Mind Engineering Lab © 2025</p>
+                    </footer>
+                </div>
+
+                {showExplanation && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-2xl max-w-md w-full relative animate-in zoom-in-95 duration-200 overflow-y-auto max-h-[90vh]">
+                            <button onClick={() => setShowExplanation(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-2"><X className="w-6 h-6" /></button>
+                            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Activity className="w-6 h-6 text-cyan-500" />SNR 系统效能图谱</h3>
+                            <div className="space-y-6">
+                                <div className="border-l-4 border-red-500 pl-4 bg-red-950/10 p-3 rounded-r-lg">
+                                    <div className="flex justify-between items-center mb-1"><span className="text-red-400 font-bold text-lg">&lt; 80%</span><span className="text-xs font-mono text-red-500/70 border border-red-500/30 px-2 py-0.5 rounded">SYSTEM CRITICAL</span></div>
+                                    <h4 className="text-white font-bold mb-1">系统濒临死机</h4>
+                                    <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-red-300">状态：噪音 &gt; 信号</strong><br/>就像在嘈杂的迪厅里打电话。你的大脑后台被“恐惧/纠结”占满了。CPU再快，指令也会变成乱码。<br/><span className="text-red-400 italic">建议：必须强制“熔断”休息。</span></p>
+                                </div>
+                                <div className="border-l-4 border-yellow-500 pl-4 bg-yellow-950/10 p-3 rounded-r-lg">
+                                    <div className="flex justify-between items-center mb-1"><span className="text-yellow-400 font-bold text-lg">80% - 150%</span><span className="text-xs font-mono text-yellow-500/70 border border-yellow-500/30 px-2 py-0.5 rounded">HIGH LATENCY</span></div>
+                                    <h4 className="text-white font-bold mb-1">高负载卡顿</h4>
+                                    <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-yellow-300">状态：信号 ≈ 噪音</strong><br/>就像电脑开了50个网页没关，风扇狂转。想做的事（信号）和不想做的事（噪音）在打架。效率低下，容易“烧坏主板”。<br/><span className="text-yellow-400 italic">建议：急需“清理缓存”。</span></p>
+                                </div>
+                                <div className="border-l-4 border-green-500 pl-4 bg-green-950/10 p-3 rounded-r-lg">
+                                    <div className="flex justify-between items-center mb-1"><span className="text-green-400 font-bold text-lg">&gt; 150%</span><span className="text-xs font-mono text-green-500/70 border border-green-500/30 px-2 py-0.5 rounded">OPTIMAL</span></div>
+                                    <h4 className="text-white font-bold mb-1">性能怪兽</h4>
+                                    <p className="text-slate-400 text-xs leading-relaxed"><strong className="text-green-300">状态：信号 &gt;&gt;&gt; 噪音</strong><br/>军工级服务器状态。外界天塌下来（噪音），内心波澜不惊，只盯着目标（信号）。每一个决策都带有穿透力。<br/><span className="text-green-400 italic">建议：全速前进。</span></p>
+                                </div>
+                                <div className="pt-4 border-t border-slate-700/50"><p className="text-[10px] text-slate-500 text-center font-mono">Formula: SNR = (Signal / Noise) * 100%</p></div>
+                            </div>
+                    </div>
+                    </div>
+                )}
+
+                {showContact && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-slate-900 border border-slate-700 p-8 rounded-2xl shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200 text-center">
+                            <button onClick={() => setShowContact(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+                            <div className="flex items-center justify-center gap-2 text-cyan-500 mb-6"><Activity className="w-8 h-8" /></div>
+                            <div className="space-y-6">
+                                <div><p className="text-slate-500 text-xs font-mono uppercase tracking-widest mb-1">System Architect</p><h3 className="text-3xl font-bold text-white tracking-tight">张博士</h3></div>
+                                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                    <p className="text-cyan-400 text-2xl font-mono font-bold tracking-wider select-all">18980841817</p>
+                                    <p className="text-slate-300 text-sm mt-2 font-bold tracking-wide">(同微信)</p>
+                                </div>
+                                <div><p className="text-slate-400 text-sm font-mono bg-slate-900 inline-block px-3 py-1 rounded border border-slate-800">验证口令：<span className="text-cyan-400 font-bold">系统升级</span></p></div>
+                                <p className="text-xs text-slate-600 pt-4 border-t border-slate-800">*仅限 CEO / 创始人 / 合伙人</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<CEODashboard />);
+    </script>
+</body>
+</html>
